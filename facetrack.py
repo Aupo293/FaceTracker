@@ -331,6 +331,7 @@ class FaceTracking(object):
         print(temp)
         self.trackingFace = temp
 
+        print(self.trackingFace)
 
                 
         time3 = time.time()
