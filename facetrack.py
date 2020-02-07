@@ -67,7 +67,7 @@ class FaceTracking(object):
     def Init(self, image):
         # self.ImageHighDP = image.copy()   # 复制输入图片
         self.tracking_id = 0              # 初始化追踪id为0
-        self.detection_Interval = 0.2     # 检测间隔 detect faces every 200 ms
+        self.detection_Interval = 0.5     # 检测间隔 detect faces every 200 ms
         self.detecting(image)             # 首帧人脸检测
         self.stabilization = False
 
@@ -106,6 +106,9 @@ class FaceTracking(object):
         """
         sym = O_Net('test')
         ctx = mx.cpu()
+        # ctx = mx.gpu()       
+        # ctx = [mx.gpu(int(i)) for i in [0,1,2,3]]
+
         args, auxs = load_param('model/onet', 9, convert=False, ctx=ctx)
         data_size = 48  # landmark net 输入的图像尺寸为48*48
         data_shapes = {'data': (1, 3, data_size, data_size)}
@@ -180,6 +183,8 @@ class FaceTracking(object):
 
         detect_length = min(image.shape[0], image.shape[1])
         ctx = mx.cpu()
+        # ctx = mx.gpu()        
+        # ctx = [mx.gpu(int(i)) for i in [0,1,2,3]]
 
         sym = L_Net('test')
         args, auxs = load_param('model/lnet', 4390, convert=False, ctx=ctx)
@@ -240,9 +245,12 @@ class FaceTracking(object):
 
     def tracking(self, image, face):
         # face 为首帧得到的其中一个候选人脸对应的类Face, image可以认为是第二帧的image
+        st = time.time()
         faceROI = face.loc    # 对应的是坐标
         model = face.frame_face_prev
         trackBox = self.tracking_corrfilter(image, model)
+        time5 = time.time()
+
         trackBox_new = self.convert_to_square(trackBox)   # 转变为正方形 以便后续操作
         x1 = trackBox_new[0]
         y1 = trackBox_new[1]
@@ -252,8 +260,12 @@ class FaceTracking(object):
         # 根据搜寻到的坐标 从当前帧获取对应图像区域即为faceROI_Image
         faceROI_Image = image[int(y1):int(y2), int(x1):int(x2)]   # 正方形图片
 
+        time6 = time.time()
+
         # faceROI_Image为输入LNet的图像, face对应类 利用face.face_5_points存放5点关键点
         face.score, face.bbox, face.face_5_points = self.doingLandmark_onet(faceROI_Image, trackBox_new)  # ?
+
+        time7 = time.time()
 
         if face.score > 0.1:
             face.loc = self.convert_to_square(face.bbox)
@@ -261,9 +273,20 @@ class FaceTracking(object):
             face.frame_face_prev = img_draw
             face.frameId += 1
             face.isCanShow = True
+            
+            time8 = time.time()
+            
+            print('time5-st1:{}'.format(time5-st))
+            print('time6-time5:{}'.format(time6-time5))
+            print('time7-time6:{}'.format(time7-time6))
+            print('time8-time7:{}'.format(time8-time7))
 
             return True
         else:
+            print('time5-st1:{}'.format(time5-st))
+            print('time6-time5:{}'.format(time6-time5))
+            print('time7-time6:{}'.format(time7-time6))
+
             return False
 
     def setMask(self, image, loc):   # 将image中的face区域置为0 face:x1 y1 x2 y2
@@ -272,20 +295,28 @@ class FaceTracking(object):
         return image
 
     def update(self, image):
+        st = time.time()
+        
         self.ImageHighDP = image.copy()   # 复制
+
+        time1 = time.time()
 
         if len(self.candidateFaces) > 0 and not self.candidateFaces_lock:  # 同时检测完成
             for i in range(len(self.candidateFaces)):
                 self.trackingFace.append(self.candidateFaces[i])
             self.candidateFaces.clear()
-        # self.trackingFace中存放的是一个个的类Face
 
+        time2 = time.time()
+
+        # self.trackingFace中存放的是一个个的类Face
         # for i in range(len(self.trackingFace)):
         #     if not self.tracking(image, self.trackingFace[i]):
         # 不可以采用这种方法在for循环中删除元素 https://segmentfault.com/a/1190000007214571
 
         self.trackingFace = list(filter(lambda x: self.tracking(image, x), self.trackingFace))
-        print(self.trackingFace)
+        # print(self.trackingFace)
+                
+        time3 = time.time()
 
         if self.detection_Time < 0:
             self.detection_Time = time.time()
@@ -295,8 +326,15 @@ class FaceTracking(object):
                 for class_ in self.trackingFace:
                     self.ImageHighDP = self.setMask(self.ImageHighDP, class_.loc)
                 self.detection_Time = time.time()
-                print('Have detected.')
+                # print('Have detected.')
                 self.detecting(self.ImageHighDP)
+        time4 = time.time()
+        
+        print('time1-st:{}'.format(time1 - st))
+        print('time2-time1:{}'.format(time2 - time1)) 
+        print('time3-time2:{}'.format(time3 - time2))
+        print('time4-time3:{}'.format(time4 - time3))  
+
 
     @staticmethod
     def convert_to_square(bbox):

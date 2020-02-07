@@ -16,7 +16,6 @@ from tools.image_processing import transform
 import argparse
 import cv2
 import time
-from core import *
 
 
 def MTCNN(img):
@@ -28,6 +27,8 @@ def MTCNN(img):
     stride = 2
     slide_window = False
     ctx = mx.cpu()
+    # ctx = mx.gpu()    
+    # ctx = [mx.gpu(int(i)) for i in [0,1,2,3]]    
 
     detectors = [None, None, None]
 
@@ -50,12 +51,16 @@ def MTCNN(img):
 
     # img = cv2.imread(image_path)
     img_disp = img.copy()
-
+    
+    time1 = time.time()
     boxes, boxes_c = mtcnn_detector.detect_pnet(img)
     # print(boxes_c)
+    time2 = time.time()
     boxes, boxes_c = mtcnn_detector.detect_rnet(img, boxes_c)
     # print(boxes_c)
+    time3 = time.time()
     boxes, boxes_c = mtcnn_detector.detect_onet(img, boxes_c)
+    time4 = time.time()
 
     original_detect = []    # 存放经过onet得到的所有框[矩形框]
     crop_list = []          # 存放[矩形框]校正为[正方形框]后的结果
@@ -178,6 +183,11 @@ def MTCNN(img):
     # cv2.waitKey(0)
     # cv2.imwrite("final_result.jpg", img0)
 
+    time5 = time.time()
+    print('time2-time1:{}'.format(time2-time1))
+    print('time3-time2:{}'.format(time3-time2))
+    print('time4-time3:{}'.format(time4-time3))
+    print('time5-time4:{}'.format(time5-time4))
 
     return result
 
