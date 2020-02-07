@@ -315,25 +315,24 @@ class FaceTracking(object):
         #     if not self.tracking(image, self.trackingFace[i]):
         # 不可以采用这种方法在for循环中删除元素 https://segmentfault.com/a/1190000007214571
 
-        # self.trackingFace = list(filter(lambda x: self.tracking(image, x), self.trackingFace))
+        self.trackingFace = list(filter(lambda x: self.tracking(image, x), self.trackingFace))
         # print(self.trackingFace)
 
-        pool = Pool(processes=4)
-        func = partial(self.tracking, image)
-        result = pool.map(func, self.trackingFace[:])
-        print(result)
+        # pool = Pool(processes=4)
+        # func = partial(self.tracking, image)
+        # result = pool.map(func, self.trackingFace[:])
+        # print(result)
+        #
+        # temp = []
+        # for i in range(len(result)):
+        #     if result[i]:
+        #         temp.append(self.trackingFace[i])
+        # print(self.trackingFace)
+        # print(temp)
+        # self.trackingFace = temp
+        #
+        # print(self.trackingFace)
 
-        temp = []
-        for i in range(len(result)):
-            if result[i]:
-                temp.append(self.trackingFace[i])
-        print(self.trackingFace)
-        print(temp)
-        self.trackingFace = temp
-
-        print(self.trackingFace)
-
-                
         time3 = time.time()
 
         if self.detection_Time < 0:
