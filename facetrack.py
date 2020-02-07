@@ -327,7 +327,10 @@ class FaceTracking(object):
         for i in range(len(result)):
             if result[i]:
                 temp.append(self.trackingFace[i])
+        print(self.trackingFace)
+        print(temp)
         self.trackingFace = temp
+
 
                 
         time3 = time.time()
