@@ -8,6 +8,8 @@ from core.symbol import L_Net, O_Net
 from tools.load_model import load_param
 import mxnet as mx
 from tools.image_processing import transform
+from multiprocessing import Pool
+from functools import partial
 
 
 class Face(object):
@@ -313,8 +315,18 @@ class FaceTracking(object):
         #     if not self.tracking(image, self.trackingFace[i]):
         # 不可以采用这种方法在for循环中删除元素 https://segmentfault.com/a/1190000007214571
 
-        self.trackingFace = list(filter(lambda x: self.tracking(image, x), self.trackingFace))
+        # self.trackingFace = list(filter(lambda x: self.tracking(image, x), self.trackingFace))
         # print(self.trackingFace)
+
+        pool = Pool(processes=4)
+        func = partial(self.tracking, image)
+        result = pool.map(func, self.trackingFace)
+        temp = []
+        for i in range(len(result)):
+            if result[i]:
+                temp.append(self.trackingFace[i])
+        self.trackingFace = temp
+
                 
         time3 = time.time()
 
