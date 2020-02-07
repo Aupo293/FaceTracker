@@ -320,7 +320,7 @@ class FaceTracking(object):
 
         pool = Pool(processes=4)
         func = partial(self.tracking, image)
-        result = pool.map(func, self.trackingFace)
+        result = pool.map(func, self.trackingFace[:])
         temp = []
         for i in range(len(result)):
             if result[i]:
