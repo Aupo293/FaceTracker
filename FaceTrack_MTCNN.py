@@ -8,7 +8,7 @@ import os
 
 
 def main_video():       # 读取视频版本
-    video_path = '/DATA/disk1/qxc/facetrack_python/FaceTracker/test_example.mp4'
+    video_path = '/Users/qiuxiaocong/Downloads/test_example.mp4'
     cap = cv2.VideoCapture(video_path)
     process = True
     frameindex = 0
@@ -29,7 +29,10 @@ def main_video():       # 读取视频版本
 
         if frameindex == 0:
             faceTrack.Init(frame)          # 首帧初始化
-            frameindex = 1
+            if faceTrack.init_success():
+                frameindex = 1
+            else:
+                continue
         else:                              # 非首帧处理
             faceTrack.update(frame)
         print("Total takes {}s\n".format(time.time()-start))  # Time
@@ -61,7 +64,7 @@ def main_video():       # 读取视频版本
             # print('get here')
         # print('here')
         # cv2.imshow("frame", frame)
-        cv2.imwrite(os.path.join('/DATA/disk1/qxc/facetrack_python/FaceTracker/result', '{}.jpg'.format(idx)), frame)        
+        # cv2.imwrite(os.path.join('/DATA/disk1/qxc/facetrack_python/FaceTracker/result', '{}.jpg'.format(idx)), frame)
 
         # print(idx)
         idx = idx + 1
@@ -141,7 +144,7 @@ def main_camera():            # 读取摄像头版本[更改本]
         # print(idx)
         # idx = idx + 1
 
-    vc.release()
+    cap.release()
     cv2.destroyWindow("Resize Preview")       #
 
 

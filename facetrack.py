@@ -1,4 +1,6 @@
 # -*- coding: UTF-8 -*-
+import multiprocessing
+import datetime
 import cv2
 import time
 from mtcnn_my import MTCNN
@@ -10,6 +12,7 @@ import mxnet as mx
 from tools.image_processing import transform
 from multiprocessing import Pool
 from functools import partial
+import copy
 
 
 class Face(object):
@@ -41,6 +44,8 @@ class FaceTracking(object):
         self.trackingFace = []      # 输出的结果
         self.candidateFaces = []
         self.tpm_scale = 2
+        # self.pool = multiprocessing.Pool(processes=4)
+        # multiprocessing.set_start_method('spawn')
         # self.face = Face()
 
     def detecting(self, image):
@@ -58,13 +63,21 @@ class FaceTracking(object):
             face_new = Face()
             face_new.face(self.tracking_id, bbox_square)
 
-            img_draw = image[int(bbox_square[1]):int(bbox_square[3]), int(bbox_square[0]):int(bbox_square[2])]
+            img_new = self.deepcopy(image)
+            img_draw = img_new[int(bbox_square[1]):int(bbox_square[3]), int(bbox_square[0]):int(bbox_square[2])]
             face_new.frame_face_prev = img_draw
 
             self.tracking_id = self.tracking_id + 1   # 统计待追踪的个数
             self.candidateFaces.append(face_new)      # self.candidateFaces 存放的是类!
 
         self.candidateFaces_lock = 0
+
+    def init_success(self):
+        return len(self.candidateFaces) >= 0
+
+    @staticmethod
+    def deepcopy(x):
+        return copy.deepcopy(x)
 
     def Init(self, image):
         # self.ImageHighDP = image.copy()   # 复制输入图片
@@ -75,7 +88,6 @@ class FaceTracking(object):
 
     @staticmethod
     def tracking_corrfilter(frame, model):
-        frame_disp = frame.copy()
         frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         model_gray = cv2.cvtColor(model, cv2.COLOR_BGR2GRAY)
         # x1, y1, x2, y2 = trackBox[0], trackBox[1], trackBox[2], trackBox[3]
@@ -194,18 +206,15 @@ class FaceTracking(object):
         data_size = 48  # landmark net 输入的图像尺寸为48*48
         imshow_size = 48  # imshow_size为landmark结果展示的图片尺寸
         data_shapes = {'data': (1, 3, data_size, data_size)}
-
         img_resized = cv2.resize(image, (48, 48))
         result = self.onet_detector(img_resized)   # 得到该图是人脸的概率值
         cls_pro = result[0][0][1]
         reg_m = result[1][0]
         bbox_new = self.calibrate_box(trackBox, reg_m)
-
         newimg = transform(img_resized)
         args['data'] = mx.nd.array(newimg, ctx)
         executor = sym.simple_bind(ctx, grad_req='null', **dict(data_shapes))
         executor.copy_params_from(args, auxs)
-
         out_list = [[] for _ in range(len(executor.outputs))]
         executor.forward(is_train=False)   # inference
         for o_list, o_nd in zip(out_list, executor.outputs):
@@ -247,10 +256,15 @@ class FaceTracking(object):
 
     def tracking(self, image, face):
         # face 为首帧得到的其中一个候选人脸对应的类Face, image可以认为是第二帧的image
+        # image_new = self.deepcopy(image)
         st = time.time()
-        faceROI = face.loc    # 对应的是坐标
+        k = np.random.randint(100)
+        print('[{}]st'.format(k), datetime.datetime.now())
+        # faceROI = face.loc    # 对应的是坐标
         model = face.frame_face_prev
         trackBox = self.tracking_corrfilter(image, model)
+        # trackBox = np.array([351,77,454,180])
+        # print(trackBox)
         time5 = time.time()
 
         trackBox_new = self.convert_to_square(trackBox)   # 转变为正方形 以便后续操作
@@ -261,13 +275,13 @@ class FaceTracking(object):
         # x1, y1, x2, y2 = trackBox[0], trackBox[1], trackBox[2], trackBox[3]
         # 根据搜寻到的坐标 从当前帧获取对应图像区域即为faceROI_Image
         faceROI_Image = image[int(y1):int(y2), int(x1):int(x2)]   # 正方形图片
-
         time6 = time.time()
 
         # faceROI_Image为输入LNet的图像, face对应类 利用face.face_5_points存放5点关键点
         face.score, face.bbox, face.face_5_points = self.doingLandmark_onet(faceROI_Image, trackBox_new)  # ?
-
         time7 = time.time()
+
+        print('[{}]time7'.format(k), datetime.datetime.now())
 
         if face.score > 0.1:
             face.loc = self.convert_to_square(face.bbox)
@@ -277,18 +291,18 @@ class FaceTracking(object):
             face.isCanShow = True
             
             time8 = time.time()
-            
-            print('time5-st1:{}'.format(time5-st))
-            print('time6-time5:{}'.format(time6-time5))
-            print('time7-time6:{}'.format(time7-time6))
-            print('time8-time7:{}'.format(time8-time7))
+            print('[{}]time8'.format(k), datetime.datetime.now())
+            # print('time5-st1:{}'.format(time5-st))
+            # print('time6-time5:{}'.format(time6-time5))
+            # print('time7-time6:{}'.format(time7-time6))
+            # print('time8-time7:{}'.format(time8-time7))
 
             return True
         else:
-            print('time5-st1:{}'.format(time5-st))
-            print('time6-time5:{}'.format(time6-time5))
-            print('time7-time6:{}'.format(time7-time6))
-
+            # print('time5-st1:{}'.format(time5-st))
+            # print('time6-time5:{}'.format(time6-time5))
+            # print('time7-time6:{}'.format(time7-time6))
+            print('[{}]time9'.format(k), datetime.datetime.now())
             return False
 
     def setMask(self, image, loc):   # 将image中的face区域置为0 face:x1 y1 x2 y2
@@ -315,14 +329,31 @@ class FaceTracking(object):
         #     if not self.tracking(image, self.trackingFace[i]):
         # 不可以采用这种方法在for循环中删除元素 https://segmentfault.com/a/1190000007214571
 
-        self.trackingFace = list(filter(lambda x: self.tracking(image, x), self.trackingFace))
+
+
+        # self.trackingFace = list(filter(lambda x: self.tracking(self.deepcopy(image), x), self.trackingFace))
         # print(self.trackingFace)
 
-        # pool = Pool(processes=4)
-        # func = partial(self.tracking, image)
-        # result = pool.map(func, self.trackingFace[:])
-        # print(result)
-        #
+        # if len(self.trackingFace) > 1:
+        #     tmp = self.trackingFace[0]
+        #     self.trackingFace.clear()
+        #     self.trackingFace.append(tmp)
+        print('[Start]', datetime.datetime.now())
+
+        multiprocessing.set_start_method('spawn')
+        print('[Start1]', datetime.datetime.now())
+        pool = Pool(processes=4)
+
+
+        print('[Star2]', datetime.datetime.now())
+        func = partial(self.tracking, image)
+        print('[Start3]', datetime.datetime.now())
+        result = pool.map(func, self.trackingFace)
+        # pool.close()
+        # pool.join()
+        print('[Final]', datetime.datetime.now())
+        print(result)
+
         # temp = []
         # for i in range(len(result)):
         #     if result[i]:
@@ -330,8 +361,8 @@ class FaceTracking(object):
         # print(self.trackingFace)
         # print(temp)
         # self.trackingFace = temp
-        #
-        # print(self.trackingFace)
+
+        print(self.trackingFace)
 
         time3 = time.time()
 
