@@ -113,6 +113,36 @@ class FaceTracking(object):
         return trackBox
 
     @staticmethod
+    def convert_to_square(bbox):
+        """
+        convert bbox to square 将输入边框变为正方形，以最长边为基准，不改变中心点
+        :param bbox: input bbox / numpy array , shape n x 5 [4个坐标值]
+        :return: square bbox
+        """
+        square_bbox = bbox.copy()  # bbox = [x1, y1, x2, y2]
+
+        h = bbox[3] - bbox[1] + 1  # 计算框的宽度 加1？
+        w = bbox[2] - bbox[0] + 1  # 计算框的长度
+        max_side = np.maximum(h, w)  # 找出最大的那个边
+
+        square_bbox[0] = bbox[0] + w * 0.5 - max_side * 0.5  # 新bbox的左上角x
+        square_bbox[1] = bbox[1] + h * 0.5 - max_side * 0.5  # 新bbox的左上角y
+        square_bbox[2] = square_bbox[0] + max_side - 1  # 新bbox的右下角x
+        square_bbox[3] = square_bbox[1] + max_side - 1  # 新bbox的右下角y
+
+        if square_bbox[0] < 0:
+            lack_ = abs(square_bbox[0])
+            square_bbox[0] = 0
+            square_bbox[2] = square_bbox[2] + lack_
+
+        if square_bbox[1] < 0:
+            lack_ = abs(square_bbox[1])
+            square_bbox[1] = 0
+            square_bbox[3] = square_bbox[3] + lack_
+
+        return square_bbox
+
+    @staticmethod
     def onet_detector(image):
         """
         :param image: 输入为48*48大小的图像
@@ -258,8 +288,8 @@ class FaceTracking(object):
         # face 为首帧得到的其中一个候选人脸对应的类Face, image可以认为是第二帧的image
         # image_new = self.deepcopy(image)
         st = time.time()
-        k = np.random.randint(100)
-        print('[{}]st'.format(k), datetime.datetime.now())
+        # k = np.random.randint(100)
+        # print('[{}]st'.format(k), datetime.datetime.now())
         # faceROI = face.loc    # 对应的是坐标
         model = face.frame_face_prev
         trackBox = self.tracking_corrfilter(image, model)
@@ -281,7 +311,7 @@ class FaceTracking(object):
         face.score, face.bbox, face.face_5_points = self.doingLandmark_onet(faceROI_Image, trackBox_new)  # ?
         time7 = time.time()
 
-        print('[{}]time7'.format(k), datetime.datetime.now())
+        # print('[{}]time7'.format(k), datetime.datetime.now())
 
         if face.score > 0.1:
             face.loc = self.convert_to_square(face.bbox)
@@ -291,18 +321,18 @@ class FaceTracking(object):
             face.isCanShow = True
             
             time8 = time.time()
-            print('[{}]time8'.format(k), datetime.datetime.now())
-            # print('time5-st1:{}'.format(time5-st))
-            # print('time6-time5:{}'.format(time6-time5))
-            # print('time7-time6:{}'.format(time7-time6))
-            # print('time8-time7:{}'.format(time8-time7))
+            # print('[{}]time8'.format(k), datetime.datetime.now())
+            print('time5-st1:{}'.format(time5-st))
+            print('time6-time5:{}'.format(time6-time5))
+            print('time7-time6:{}'.format(time7-time6))
+            print('time8-time7:{}'.format(time8-time7))
 
             return True
         else:
-            # print('time5-st1:{}'.format(time5-st))
-            # print('time6-time5:{}'.format(time6-time5))
-            # print('time7-time6:{}'.format(time7-time6))
-            print('[{}]time9'.format(k), datetime.datetime.now())
+            print('time5-st1:{}'.format(time5-st))
+            print('time6-time5:{}'.format(time6-time5))
+            print('time7-time6:{}'.format(time7-time6))
+            # print('[{}]time9'.format(k), datetime.datetime.now())
             return False
 
     def setMask(self, image, loc):   # 将image中的face区域置为0 face:x1 y1 x2 y2
@@ -329,31 +359,26 @@ class FaceTracking(object):
         #     if not self.tracking(image, self.trackingFace[i]):
         # 不可以采用这种方法在for循环中删除元素 https://segmentfault.com/a/1190000007214571
 
-
-
-        # self.trackingFace = list(filter(lambda x: self.tracking(self.deepcopy(image), x), self.trackingFace))
+        self.trackingFace = list(filter(lambda x: self.tracking(self.deepcopy(image), x), self.trackingFace))
         # print(self.trackingFace)
 
         # if len(self.trackingFace) > 1:
         #     tmp = self.trackingFace[0]
         #     self.trackingFace.clear()
         #     self.trackingFace.append(tmp)
-        print('[Start]', datetime.datetime.now())
+        # print('[Start]', datetime.datetime.now())
 
-        multiprocessing.set_start_method('spawn')
-        print('[Start1]', datetime.datetime.now())
-        pool = Pool(processes=4)
-
-
-        print('[Star2]', datetime.datetime.now())
-        func = partial(self.tracking, image)
-        print('[Start3]', datetime.datetime.now())
-        result = pool.map(func, self.trackingFace)
+        # multiprocessing.set_start_method('spawn')
+        # print('[Start1]', datetime.datetime.now())
+        # pool = Pool(processes=4)
+        # print('[Star2]', datetime.datetime.now())
+        # func = partial(self.tracking, image)
+        # print('[Start3]', datetime.datetime.now())
+        # result = pool.map(func, self.trackingFace)
         # pool.close()
         # pool.join()
-        print('[Final]', datetime.datetime.now())
-        print(result)
-
+        # print('[Final]', datetime.datetime.now())
+        # print(result)
         # temp = []
         # for i in range(len(result)):
         #     if result[i]:
@@ -362,7 +387,7 @@ class FaceTracking(object):
         # print(temp)
         # self.trackingFace = temp
 
-        print(self.trackingFace)
+        # print(self.trackingFace)
 
         time3 = time.time()
 
@@ -384,34 +409,6 @@ class FaceTracking(object):
         print('time4-time3:{}'.format(time4 - time3))  
 
 
-    @staticmethod
-    def convert_to_square(bbox):
-        """
-        convert bbox to square 将输入边框变为正方形，以最长边为基准，不改变中心点
-        :param bbox: input bbox / numpy array , shape n x 5 [4个坐标值]
-        :return: square bbox
-        """
-        square_bbox = bbox.copy()  # bbox = [x1, y1, x2, y2]
 
-        h = bbox[3] - bbox[1] + 1  # 计算框的宽度 加1？
-        w = bbox[2] - bbox[0] + 1  # 计算框的长度
-        max_side = np.maximum(h, w)  # 找出最大的那个边
-
-        square_bbox[0] = bbox[0] + w * 0.5 - max_side * 0.5  # 新bbox的左上角x
-        square_bbox[1] = bbox[1] + h * 0.5 - max_side * 0.5  # 新bbox的左上角y
-        square_bbox[2] = square_bbox[0] + max_side - 1  # 新bbox的右下角x
-        square_bbox[3] = square_bbox[1] + max_side - 1  # 新bbox的右下角y
-
-        if square_bbox[0] < 0:
-            lack_ = abs(square_bbox[0])
-            square_bbox[0] = 0
-            square_bbox[2] = square_bbox[2] + lack_
-
-        if square_bbox[1] < 0:
-            lack_ = abs(square_bbox[1])
-            square_bbox[1] = 0
-            square_bbox[3] = square_bbox[3] + lack_
-
-        return square_bbox
 
 
