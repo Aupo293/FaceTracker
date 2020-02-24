@@ -15,7 +15,7 @@ process = True
 
 
 def main_video():       # 读取视频版本
-    video_path = '/Users/qiuxiaocong/Downloads/test_example.mp4'
+    video_path = '/DATA/disk1/qxc/facetrack_python/FaceTracker/test_example.mp4'
     cap = cv2.VideoCapture(video_path)
     process = True
     frameindex = 0
@@ -43,7 +43,7 @@ def main_video():       # 读取视频版本
         else:                              # 非首帧处理
             faceTrack.update(frame)
         print("Total takes {}s\n".format(time.time()-start))  # Time
-        # print("------------------\n")
+        print("------------------\n")
 
         faceActions = faceTrack.trackingFace    # trackingFace存放跟踪的结果
         # print(len(faceActions))
@@ -261,7 +261,6 @@ def processingThread():
             print("--------------------------------------")
 
 
-
 def main_multi():
     use_file = True
     if use_file:
@@ -353,8 +352,8 @@ def main_multi():
 
 
 if __name__ == '__main__':
-    # main_video()
+    main_video()
     # main_camera()
 
-    main_multi()
+    # main_multi()
 
