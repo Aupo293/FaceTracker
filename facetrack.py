@@ -89,7 +89,7 @@ class FaceTracking(object):
         self.stabilization = False
 
     @staticmethod
-    def tracking_corrfilter(frame, model, k):
+    def tracking_corrfilter(frame, model, cord):
         frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         model_gray = cv2.cvtColor(model, cv2.COLOR_BGR2GRAY)
         # x1, y1, x2, y2 = trackBox[0], trackBox[1], trackBox[2], trackBox[3]
@@ -105,14 +105,21 @@ class FaceTracking(object):
         res = cv2.matchTemplate(frame_gray, model_gray, method)
         min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
 
-        print('tacking box res {}: {}'.format(k, max_val))
+        # print('tacking box res {}: {}'.format(k, max_val))
 
         top_left = max_loc                                  # 左上角
-        bottom_right = (top_left[0] + w, top_left[1] + h)   # 右下角
+        # bottom_right = (top_left[0] + w, top_left[1] + h)   # 右下角
 
         # cv2.rectangle(frame_disp, top_left, bottom_right, 255, 2)   # display result
         # cv2.imshow('test', frame_disp)
         # cv2.waitKey(0)
+
+        #----------------------------------#
+        top_left = list(top_left)
+        top_left[0] = top_left[0] + cord[0]
+        top_left[1] = top_left[1] + cord[1]
+        bottom_right = (top_left[0] + w, top_left[1] + h)
+        # ----------------------------------#
 
         trackBox = np.array([top_left[0], top_left[1], bottom_right[0], bottom_right[1]])
         return trackBox
@@ -298,15 +305,30 @@ class FaceTracking(object):
         faceROI = face.loc    # 对应的是坐标
         model = face.frame_face_prev
 
-        k = np.random.randint(10000)
-        cv2.imwrite(os.path.join('/Users/qiuxiaocong/Downloads/tttest', 'image_{}.jpg'.format(k)), image)
-        cv2.imwrite(os.path.join('/Users/qiuxiaocong/Downloads/tttest', 'model_{}.jpg'.format(k)), model)
+        #--------------------------------------# kuo da 1 bei
+        x2_x1 = face.loc[2] - face.loc[0]
+        y2_y1 = face.loc[3] - face.loc[1]
+        up_down = y2_y1/2.0
+        left_right = x2_x1/2.0
+        new_x1 = max(0, int(face.loc[0]-left_right))
+        new_y1 = max(0, int(face.loc[1]-up_down))
+        new_x2 = int(face.loc[2]+left_right)
+        new_y2 = int(face.loc[3]+up_down)
+        cord = [new_x1, new_y1]
+        test_img = image[new_y1:new_y2, new_x1:new_x2]
+        # --------------------------------------#
 
-        print('tacking box input {} : {}'.format(k, faceROI))
+
+        # k = np.random.randint(10000)
+        # cv2.imwrite(os.path.join('/Users/qiuxiaocong/Downloads/tttest', 'image_{}.jpg'.format(k)), image)
+        # cv2.imwrite(os.path.join('/Users/qiuxiaocong/Downloads/tttest', 'model_{}.jpg'.format(k)), model)
+
+        # print('tacking box input {} : {}'.format(k, faceROI))
         # print('tacking box input : {}'.format(model))
-        trackBox = self.tracking_corrfilter(image, model, k)
+        # trackBox = self.tracking_corrfilter(image, model)  # 匹配得到的结果
+        trackBox = self.tracking_corrfilter(test_img, model, cord)  # 匹配得到的结果对应在整张img中的位置坐标
         # trackBox = np.array([351,77,454,180])
-        print('tacking box output {}: {}'.format(k, trackBox))
+        # print('tacking box output {}: {}'.format(k, trackBox))
         time5 = time.time()
 
         trackBox_new = self.convert_to_square(trackBox)   # 转变为正方形 以便后续操作
@@ -320,9 +342,8 @@ class FaceTracking(object):
         time6 = time.time()
 
         # faceROI_Image为输入LNet的图像, face对应类 利用face.face_5_points存放5点关键点
-        face.score, face.bbox, face.face_5_points = self.doingLandmark_onet(faceROI_Image, trackBox_new)  # ?
-        print('score {}, bbox {}, face_5_points{}'.format(face.score, face.bbox, face.face_5_points))
-
+        face.score, face.bbox, face.face_5_points = self.doingLandmark_onet(faceROI_Image, trackBox_new)  # ONet精确检测
+        # print('score {}, bbox {}, face_5_points{}'.format(face.score, face.bbox, face.face_5_points))
 
         time7 = time.time()
 
@@ -337,17 +358,18 @@ class FaceTracking(object):
             
             time8 = time.time()
             # print('[{}]time8'.format(k), datetime.datetime.now())
-            # print('time5-st1:{}'.format(time5-st))
-            # print('time6-time5:{}'.format(time6-time5))
-            # print('time7-time6:{}'.format(time7-time6))
-            # print('time8-time7:{}'.format(time8-time7))
+            print('time5-st1:{}'.format(time5-st))
+            print('time6-time5:{}'.format(time6-time5))
+            print('time7-time6:{}'.format(time7-time6))
+            print('time8-time7:{}'.format(time8-time7))
+            print('~~~~~~')
 
             return True
         else:
-            # print('time5-st1:{}'.format(time5-st))
-            # print('time6-time5:{}'.format(time6-time5))
-            # print('time7-time6:{}'.format(time7-time6))
-            # print('[{}]time9'.format(k), datetime.datetime.now())
+            print('time5-st1:{}'.format(time5-st))
+            print('time6-time5:{}'.format(time6-time5))
+            print('time7-time6:{}'.format(time7-time6))
+            print('[{}]time9'.format(k), datetime.datetime.now())
             return False
 
     def setMask(self, image, loc):   # 将image中的face区域置为0 face:x1 y1 x2 y2
@@ -381,8 +403,8 @@ class FaceTracking(object):
         #         trackingFace_new.append(self.trackingFace[i])
         # self.trackingFace = trackingFace_new
 
-        for i in range(len(self.trackingFace)):
-            print('self.trackingFace', self.trackingFace[i].bbox)
+        # for i in range(len(self.trackingFace)):
+        #     print('self.trackingFace', self.trackingFace[i].bbox)
         # print(self.trackingFace)
 
         # if len(self.trackingFace) > 1:
@@ -426,10 +448,10 @@ class FaceTracking(object):
                 self.detecting(self.ImageHighDP)
         time4 = time.time()
         
-        # print('time1-st:{}'.format(time1 - st))
-        # print('time2-time1:{}'.format(time2 - time1))
-        # print('time3-time2:{}'.format(time3 - time2))
-        # print('time4-time3:{}'.format(time4 - time3))
+        print('time1-st:{}'.format(time1 - st))
+        print('time2-time1:{}'.format(time2 - time1))
+        print('time3-time2:{}'.format(time3 - time2))
+        print('time4-time3:{}'.format(time4 - time3))
 
 
 

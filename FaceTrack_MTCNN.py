@@ -15,7 +15,7 @@ process = True
 
 
 def main_video():       # 读取视频版本
-    video_path = '/DATA/disk1/qxc/facetrack_python/FaceTracker/test_example.mp4'
+    video_path = '/Users/qiuxiaocong/qxc/FaceTracker/test_example.mp4'
     cap = cv2.VideoCapture(video_path)
     process = True
     frameindex = 0
@@ -71,7 +71,7 @@ def main_video():       # 读取视频版本
             # print('get here')
         # print('here')
         # cv2.imshow("frame", frame)
-        # cv2.imwrite(os.path.join('/DATA/disk1/qxc/facetrack_python/FaceTracker/result', '{}.jpg'.format(idx)), frame)
+        cv2.imwrite(os.path.join('/Users/qiuxiaocong/qxc/FaceTracker/result', '{}.jpg'.format(idx)), frame)
 
         # print(idx)
         idx = idx + 1
