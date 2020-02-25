@@ -378,7 +378,6 @@ def multi_process(framesQueue, predictionsQueue, process):
                 else:
                     continue
             else:
-                # print('frame_get',frame_get)
                 faceTrack.update(frame_get)
                 if len(faceTrack.trackingFace) > 0:
                     predictionsQueue.put(faceTrack.trackingFace)
@@ -428,10 +427,8 @@ def main_multiprocess():
         # cv2.imshow("Resize Preview", cv2.flip(frame, 1))
 
         # frame = cv2.resize(frame, dim, interpolation=cv2.INTER_AREA)
-        # key = cv2.waitKey(20)
-        # if key == 27:  # exit on ESC
-        #     break
-        if not rval:   # 视频结束
+
+        if not rval:
             print('Last Frame!')
             break
         if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -479,7 +476,7 @@ def main_multiprocess():
         # print(idx)
         # idx = idx + 1
 
-    # process = False
+    process = False
 
     cap.release()
     cv2.destroyWindow("Resize Preview")
