@@ -50,10 +50,10 @@ class FaceTracking(object):
         # self.face = Face()
 
     def detecting(self, image):    # 更改了mtcnn之后
-        try:
-            mtcnn_result = MTCNN(image)   # MTCNN人脸检测结果 首帧人脸检测
-        except:
-            mtcnn_result = {}
+        # try:
+        mtcnn_result = MTCNN(image)   # MTCNN人脸检测结果 首帧人脸检测
+        # except:
+        #     mtcnn_result = {}
         box_num = len(mtcnn_result)   # 首帧包含的人脸个数
         self.candidateFaces_lock = 1  # 上锁
         for i in range(box_num):

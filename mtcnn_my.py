@@ -58,6 +58,8 @@ def MTCNN(img):
     boxes, boxes_c = mtcnn_detector.detect_rnet(img, boxes_c)
     # print(boxes_c)
     time3 = time.time()
+    if boxes_c is None:
+        return []
     boxes, boxes_c = mtcnn_detector.detect_onet(img, boxes_c)
     time4 = time.time()
 
