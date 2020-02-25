@@ -14,7 +14,7 @@ def load_checkpoint(prefix, epoch):
     """
     # save_dict = mx.nd.load('%s-%04d.params' % (prefix, epoch))
     # save_dict = mx.nd.load('/Users/qiuxiaocong/Downloads/%s-%04d.params' % (prefix, epoch))
-    save_dict = mx.nd.load('/Users/qiuxiaocong/Downloads/facetrack_python/second_result/%s-%04d.params' % (prefix, epoch))
+    save_dict = mx.nd.load('../second_result/%s-%04d.params' % (prefix, epoch))
 
     arg_params = {}
     aux_params = {}

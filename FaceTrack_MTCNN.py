@@ -15,7 +15,7 @@ process = True
 
 
 def main_video():       # 读取视频版本
-    video_path = '/Users/qiuxiaocong/qxc/FaceTracker/test_example.mp4'
+    video_path = './test_example.mp4'
     cap = cv2.VideoCapture(video_path)
     process = True
     frameindex = 0
