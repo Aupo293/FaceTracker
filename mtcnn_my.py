@@ -21,9 +21,13 @@ import time
 def MTCNN(img):
     prefix = ['model/pnet', 'model/rnet', 'model/onet', 'model/lnet']
     epoch = [12, 15, 9, 4390]
-    batch_size = [2048, 256, 16]
+    # batch_size = [2048, 256, 16]
+    batch_size = [512, 64, 16]    # 在这个参数下检测一张400*800极限了 需要约56ms
+    # thresh = [0.5, 0.6, 0.7]
     thresh = [0.5, 0.6, 0.7]
-    min_face_size = 40
+    # min_face_size = 40
+    min_face_size = 60
+
     stride = 2
     slide_window = False
     ctx = mx.cpu()
@@ -59,6 +63,7 @@ def MTCNN(img):
     # print(boxes_c)
     time3 = time.time()
     if boxes_c is None:
+        print('RNet输出为None了')
         return []
     boxes, boxes_c = mtcnn_detector.detect_onet(img, boxes_c)
     time4 = time.time()

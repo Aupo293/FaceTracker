@@ -70,9 +70,9 @@ class FaceTracking(object):
             face_new.frame_face_prev = img_draw
 
             self.tracking_id = self.tracking_id + 1   # 统计待追踪的个数
-            print('detceting new face')
+            # print('detceting new face')
             self.candidateFaces.append(face_new)      # self.candidateFaces 存放的是类!
-            print('bbox', bbox)
+            # print('bbox', bbox)
         self.candidateFaces_lock = 0
 
 
@@ -112,7 +112,7 @@ class FaceTracking(object):
     def Init(self, image):
         # self.ImageHighDP = image.copy()   # 复制输入图片
         self.tracking_id = 0              # 初始化追踪id为0
-        self.detection_Interval = 0.7     # 检测间隔 detect faces every 200 ms
+        self.detection_Interval = 0.5     # 检测间隔 detect faces every 200 ms
         self.detecting(image)             # 首帧人脸检测
         self.stabilization = False
 
