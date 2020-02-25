@@ -49,7 +49,7 @@ class FaceTracking(object):
         # multiprocessing.set_start_method('spawn')
         # self.face = Face()
 
-    def detecting(self, image):
+    def detecting(self, image):    # 更改了mtcnn之后
         try:
             mtcnn_result = MTCNN(image)   # MTCNN人脸检测结果 首帧人脸检测
         except:
@@ -57,8 +57,9 @@ class FaceTracking(object):
         box_num = len(mtcnn_result)   # 首帧包含的人脸个数
         self.candidateFaces_lock = 1  # 上锁
         for i in range(box_num):
-            result = mtcnn_result[i]  # result 包含[[5 points],array[box],score]
-            bbox = result[1]          # 0 -> 5 points, 1 -> bbox, 2 ->score
+            # result = mtcnn_result[i]  # result 包含[[5 points],array[box],score]
+            # bbox = result[1]          # 0 -> 5 points, 1 -> bbox, 2 ->score
+            bbox = mtcnn_result[i]
             bbox_square = self.convert_to_square(bbox)  # 校正为正方形  [x1, y1, x2, y2]
 
             face_new = Face()
@@ -74,6 +75,33 @@ class FaceTracking(object):
             print('bbox', bbox)
         self.candidateFaces_lock = 0
 
+
+    # def detecting(self, image):
+    #     try:
+    #         mtcnn_result = MTCNN(image)   # MTCNN人脸检测结果 首帧人脸检测
+    #     except:
+    #         mtcnn_result = {}
+    #     box_num = len(mtcnn_result)   # 首帧包含的人脸个数
+    #     self.candidateFaces_lock = 1  # 上锁
+    #     for i in range(box_num):
+    #         result = mtcnn_result[i]  # result 包含[[5 points],array[box],score]
+    #         bbox = result[1]          # 0 -> 5 points, 1 -> bbox, 2 ->score
+    #         bbox_square = self.convert_to_square(bbox)  # 校正为正方形  [x1, y1, x2, y2]
+    #
+    #         face_new = Face()
+    #         face_new.face(self.tracking_id, bbox_square)
+    #
+    #         img_new = self.deepcopy(image)
+    #         img_draw = img_new[int(bbox_square[1]):int(bbox_square[3]), int(bbox_square[0]):int(bbox_square[2])]
+    #         face_new.frame_face_prev = img_draw
+    #
+    #         self.tracking_id = self.tracking_id + 1   # 统计待追踪的个数
+    #         print('detceting new face')
+    #         self.candidateFaces.append(face_new)      # self.candidateFaces 存放的是类!
+    #         print('bbox', bbox)
+    #     self.candidateFaces_lock = 0
+
+
     def init_success(self):
         return len(self.candidateFaces) > 0
 
@@ -84,7 +112,7 @@ class FaceTracking(object):
     def Init(self, image):
         # self.ImageHighDP = image.copy()   # 复制输入图片
         self.tracking_id = 0              # 初始化追踪id为0
-        self.detection_Interval = 0.1     # 检测间隔 detect faces every 200 ms
+        self.detection_Interval = 0.7     # 检测间隔 detect faces every 200 ms
         self.detecting(image)             # 首帧人脸检测
         self.stabilization = False
 
@@ -249,10 +277,10 @@ class FaceTracking(object):
         imshow_size = 48  # imshow_size为landmark结果展示的图片尺寸
         data_shapes = {'data': (1, 3, data_size, data_size)}
         img_resized = cv2.resize(image, (48, 48))
-        result = self.onet_detector(img_resized)   # 得到该图是人脸的概率值
-        cls_pro = result[0][0][1]
-        reg_m = result[1][0]
-        bbox_new = self.calibrate_box(trackBox, reg_m)
+        # result = self.onet_detector(img_resized)   # 得到该图是人脸的概率值
+        # cls_pro = result[0][0][1]
+        # reg_m = result[1][0]
+        # bbox_new = self.calibrate_box(trackBox, reg_m)
         newimg = transform(img_resized)
         args['data'] = mx.nd.array(newimg, ctx)
         executor = sym.simple_bind(ctx, grad_req='null', **dict(data_shapes))
@@ -294,7 +322,8 @@ class FaceTracking(object):
         # cv2.imshow('frame', frame)
         # cv2.waitKey(0)
 
-        return cls_pro, bbox_new, disp_landmark
+        # return cls_pro, bbox_new, disp_landmark
+        return 1.0, trackBox, disp_landmark
 
     def tracking(self, image, face):
         # face 为首帧得到的其中一个候选人脸对应的类Face, image可以认为是第二帧的image
@@ -305,7 +334,7 @@ class FaceTracking(object):
         faceROI = face.loc    # 对应的是坐标
         model = face.frame_face_prev
 
-        #--------------------------------------# kuo da 1 bei
+        #--------------------------------------# kuo da 1 bei 不用原图img进行模板匹配
         x2_x1 = face.loc[2] - face.loc[0]
         y2_y1 = face.loc[3] - face.loc[1]
         up_down = y2_y1/2.0
@@ -369,7 +398,7 @@ class FaceTracking(object):
             print('time5-st1:{}'.format(time5-st))
             print('time6-time5:{}'.format(time6-time5))
             print('time7-time6:{}'.format(time7-time6))
-            print('[{}]time9'.format(k), datetime.datetime.now())
+            # print('[{}]time9'.format(k), datetime.datetime.now())
             return False
 
     def setMask(self, image, loc):   # 将image中的face区域置为0 face:x1 y1 x2 y2
@@ -445,7 +474,9 @@ class FaceTracking(object):
                     self.ImageHighDP = self.setMask(self.ImageHighDP, class_.loc)
                 self.detection_Time = time.time()
                 # print('Have detected.')
-                self.detecting(self.ImageHighDP)
+                # sttt1 = time.time()
+                self.detecting(self.ImageHighDP)   # 占据了几乎所有时间，作用是用来检测是否有新人脸加入
+                # print('detecting take:', time.time()-sttt1)
         time4 = time.time()
         
         print('time1-st:{}'.format(time1 - st))

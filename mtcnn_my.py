@@ -49,18 +49,22 @@ def MTCNN(img):
 
     mtcnn_detector = MtcnnDetector1(detectors=detectors, ctx=ctx, min_face_size=min_face_size, stride=stride, threshold=thresh, slide_window=slide_window)
 
-    # img = cv2.imread(image_path)
     img_disp = img.copy()
     
-    # time1 = time.time()
+    time1 = time.time()
     boxes, boxes_c = mtcnn_detector.detect_pnet(img)
     # print(boxes_c)
-    # time2 = time.time()
+    time2 = time.time()
     boxes, boxes_c = mtcnn_detector.detect_rnet(img, boxes_c)
     # print(boxes_c)
-    # time3 = time.time()
+    time3 = time.time()
     boxes, boxes_c = mtcnn_detector.detect_onet(img, boxes_c)
-    # time4 = time.time()
+    time4 = time.time()
+
+    if boxes_c is not None:
+        print('新检测到人脸!')
+    else:
+        print('此次检测未检测到人脸!')
 
     original_detect = []    # 存放经过onet得到的所有框[矩形框]
     crop_list = []          # 存放[矩形框]校正为[正方形框]后的结果
@@ -99,12 +103,13 @@ def MTCNN(img):
         return square_bbox
 
     if boxes_c is not None:
-        font = cv2.FONT_HERSHEY_SIMPLEX  # Python 一种字体
+        # font = cv2.FONT_HERSHEY_SIMPLEX  # Python 一种字体
 
         for b in boxes_c:  # nms和bbr之后的结果
             # 在draw上绘制矩形框(左上角坐标+右下角坐标)
             b_new0 = np.array(b[0:4])  # 添加检测框
             original_detect.append(b_new0)
+            """
             b_new = convert_to_square(b_new0)  # 添加送入到landmark net的48*48大小的框
             crop_list.append(b_new)
             score_list.append(b[4])
@@ -118,7 +123,10 @@ def MTCNN(img):
                 img_resized = cv2.resize(img_draw, (48, 48))
                 nd_array.append(img_resized)
                 idx = idx + 1
+            """
+    time5 = time.time()
 
+    """
     # load lnet model(1990 3330 4390)
     sym = L_Net('test')
     args, auxs = load_param(prefix[3], epoch[3], convert=False, ctx=ctx)
@@ -168,59 +176,33 @@ def MTCNN(img):
             disp_landmark.append(display_landmark_y)
 
         disp_landmarks.append(disp_landmark)
+    """
+    time6 = time.time()
 
-    result = dict()
-    for i in range(idx):
-        result[i] = [disp_landmarks[i], original_detect[i], score_list[i]]
+    # result = dict()
+    # for i in range(idx):
+    #     result[i] = [disp_landmarks[i], original_detect[i], score_list[i]]
     # print(result)
 
-    for i in range(idx):
-        for j in range(int(len(landmarks) / 2)):
-            cv2.circle(img_disp, (int(disp_landmarks[i][j*2]), int(disp_landmarks[i][j*2+1])),  2, (0, 255, 0), -1)   # b g r
-        cv2.rectangle(img_disp, (int(original_detect[i][0]), int(original_detect[i][1])), (int(original_detect[i][2]), int(original_detect[i][3])), (0, 255, 0), 2)  # (0, 255, 255) yellow
+    # for i in range(idx):
+    #     for j in range(int(len(landmarks) / 2)):
+    #         cv2.circle(img_disp, (int(disp_landmarks[i][j*2]), int(disp_landmarks[i][j*2+1])),  2, (0, 255, 0), -1)   # b g r
+    #     cv2.rectangle(img_disp, (int(original_detect[i][0]), int(original_detect[i][1])), (int(original_detect[i][2]), int(original_detect[i][3])), (0, 255, 0), 2)  # (0, 255, 255) yellow
 
     # cv2.imshow("landmarks_10_total", img_disp)
     # cv2.waitKey(0)
     # cv2.imwrite("final_result.jpg", img0)
 
     # time5 = time.time()
-    # print('time2-time1:{}'.format(time2-time1))
-    # print('time3-time2:{}'.format(time3-time2))
-    # print('time4-time3:{}'.format(time4-time3))
-    # print('time5-time4:{}'.format(time5-time4))
+    print('time2-time1:{}'.format(time2-time1))
+    print('time3-time2:{}'.format(time3-time2))
+    print('time4-time3:{}'.format(time4-time3))
+    print('time5-time4:{}'.format(time5-time4))
+    print('time6-time5:{}'.format(time6 - time5))
 
-    return result
+    # return result
+    return original_detect
 
 
-# if __name__ == '__main__':
-#     start = time.time()
-#     result = MTCNN('/Users/qiuxiaocong/Downloads/facetrack_python/zhang.jpeg')
-#     print('Detecting take {}s'.format(time.time()-start))
-#     print(result)
 
-# [351  81 459 189]
-# [352  82 453 183]
-# [351  84 451 184]
 
-def tracking_corrfilter(frame, model):
-        frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        model_gray = cv2.cvtColor(model, cv2.COLOR_BGR2GRAY)
-
-        w, h = model_gray.shape[::-1]
-
-        method = eval('cv2.TM_CCORR_NORMED')
-        res = cv2.matchTemplate(frame_gray, model_gray, method)
-        min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(res)
-
-        top_left = max_loc                                  # 左上角
-        bottom_right = (top_left[0] + w, top_left[1] + h)   # 右下角
-
-        trackBox = np.array([top_left[0], top_left[1], bottom_right[0], bottom_right[1]])
-        return trackBox
-
-# frame = cv2.imread('/Users/qiuxiaocong/Downloads/88.jpg')
-# sup = cv2.imread('/Users/qiuxiaocong/Downloads/93.jpg')
-# model = sup[81:189, 351:459] # [351  81 459 189]  [352  82 453 183]
-# result = tracking_corrfilter(frame, model)
-# # image[int(y1):int(y2), int(x1):int(x2)]
-# print(result)

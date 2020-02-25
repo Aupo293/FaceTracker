@@ -320,7 +320,17 @@ import cv2
 # for i in range(len(a)):
 #     print('heool')
 
+import cv2
+img = cv2.imread('/Users/qiuxiaocong/qxc/FaceTracker/result/11.jpg')
+print(img.shape)
 
+
+from mtcnn import MTCNN
+a = MTCNN()
+time1 = time.time()
+result  = a.detect_faces(img)
+print('take:',time.time()-time1)
+print(result)
 
 
 

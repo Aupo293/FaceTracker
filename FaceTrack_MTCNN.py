@@ -43,7 +43,9 @@ def main_video():       # 读取视频版本
         else:                              # 非首帧处理
             faceTrack.update(frame)
         print("Total takes {}s\n".format(time.time()-start))  # Time
-        print("------------------\n")
+        idx = idx + 1
+        print("---------[{}]---------\n".format(idx))
+
 
         faceActions = faceTrack.trackingFace    # trackingFace存放跟踪的结果
         # print(len(faceActions))
@@ -71,10 +73,10 @@ def main_video():       # 读取视频版本
             # print('get here')
         # print('here')
         # cv2.imshow("frame", frame)
-        cv2.imwrite(os.path.join('/Users/qiuxiaocong/qxc/FaceTracker/result', '{}.jpg'.format(idx)), frame)
+        # cv2.imwrite(os.path.join('/Users/qiuxiaocong/qxc/FaceTracker/result', '{}.jpg'.format(idx)), frame)
 
         # print(idx)
-        idx = idx + 1
+        # idx = idx + 1
         # cv2.waitKey(10)
 
     cap.release()
@@ -101,7 +103,7 @@ def main_camera():            # 读取摄像头版本[更改本]
     IDs = []
     Colors = []
     faceTrack = FaceTracking()
-    # idx = 0
+    idx = 0
 
     while process:
         rval, frame = cap.read()
@@ -120,7 +122,8 @@ def main_camera():            # 读取摄像头版本[更改本]
         else:  # 非首帧处理
             faceTrack.update(frame)
         print("Total takes {}s\n".format(time.time() - start))  # Time
-        # print("------------------\n")
+        idx = idx + 1
+        print("---------[{}]---------\n".format(idx))
 
         faceActions = faceTrack.trackingFace  # trackingFace存放跟踪的结果
         for i in range(len(faceActions)):  # 遍历所有的类别
@@ -150,7 +153,7 @@ def main_camera():            # 读取摄像头版本[更改本]
         cv2.imshow("frame", frame)
 
         # print(idx)
-        # idx = idx + 1
+
 
     cap.release()
     cv2.destroyWindow("Resize Preview")       #
